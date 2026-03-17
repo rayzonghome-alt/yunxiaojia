@@ -1,8 +1,9 @@
 import { useState } from "react";
 
-const API_KEY = "sk-lxhffloiragxtzxkdzaydvcqisoxsdigkytppduvmpxntzbj";
+const API_KEY = "93a73961-f2a7-47e6-ae86-5e9b06e71b8c";
 const FEISHU_WEBHOOK = "https://open.feishu.cn/open-apis/bot/v2/hook/86d4f6cb-1eb8-455d-a656-4b036fb1217f";
-const API_URL = "https://api.siliconflow.cn/v1/chat/completions";
+const API_URL = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
+const MODEL = "doubao-seed-2-0-pro-260215";
 
 async function sendLog(form, dims, topic, script) {
   const now = new Date();
@@ -38,7 +39,7 @@ async function callAI(prompt) {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY}` },
     body: JSON.stringify({
-      model: "deepseek-ai/DeepSeek-V3",
+      model: MODEL,
       max_tokens: 2000,
       messages: [{ role: "user", content: prompt }]
     }),
