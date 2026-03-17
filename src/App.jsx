@@ -1,8 +1,38 @@
 import { useState } from "react";
 
 const API_KEY = "sk-lxhffloiragxtzxkdzaydvcqisoxsdigkytppduvmpxntzbj";
+const FEISHU_WEBHOOK = "https://open.feishu.cn/open-apis/bot/v2/hook/86d4f6cb-1eb8-455d-a656-4b036fb1217f";
 const API_URL = "https://api.siliconflow.cn/v1/chat/completions";
 
+async function sendLog(form, dims, topic, script) {
+  const now = new Date();
+  const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  
+  const content = [
+    `🕐 时间：${timeStr}`,
+    `👤 账号类型：${form.accountType}`,
+    `🌿 触发源：${form.triggerType}`,
+    `👨‍🌾 目标人群：${form.audience}`,
+    `🎯 经营目的：${form.purpose}`,
+    `📝 具体内容：${form.content}`,
+    `📍 本地信息：${form.localInfo}`,
+    `💡 选题：${topic}`,
+    `✍️ 文案：\n${script}`,
+  ].join("\n");
+
+  try {
+    await fetch(FEISHU_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        msg_type: "text",
+        content: { text: content }
+      }),
+    });
+  } catch (e) {
+    console.log("日志发送失败", e);
+  }
+}
 async function callAI(prompt) {
   const res = await fetch(API_URL, {
     method: "POST",
@@ -307,6 +337,7 @@ export default function App() {
     try {
       const t = `《${topics[sel].title}》— ${topics[sel].style}`;
       const r = await callAI(buildPrompt(form, dims, "script", t));
+      await sendLog(form, dims, `《${topics[sel].title}》— ${topics[sel].style}`, r);
       setScript(r); setStep(3);
     } catch (e) { setErr("生成失败：" + e.message); }
     setLoading(false);
