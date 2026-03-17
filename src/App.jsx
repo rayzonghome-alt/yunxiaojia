@@ -90,10 +90,95 @@ function deriveAllDims(form) {
 }
 
 function buildPrompt(form, dims, step, selectedTopic, script) {
-  const base = `你是农资门店短视频文案专家。\n【参数】账号:${form.accountType} 触发源:${form.triggerType} 人群:${form.audience} 目的:${form.purpose}\n具体内容:${form.content}\n本地信息:${form.localInfo}\n语感:${form.voice || "朴实口语"}\n【维度】表达:${dims.expression[0]} 时长:${dims.duration} CTA:${dims.ctaDirection}(${dims.ctaStrength}) 情绪:${dims.mood} 举例:${dims.example} 密度:${dims.density} 本地化:${dims.localStrength}`;
-  if (step === "topics") return base + `\n\n生成2个选题，方案一用「${dims.expression[0]}」，方案二用「${dims.expression[1]}」。严格只返回JSON数组，不加任何说明：\n[{"title":"标题一","style":"${dims.expression[0]}","angle":"角度一句话"},{"title":"标题二","style":"${dims.expression[1]}","angle":"角度一句话"}]`;
-  if (step === "script") return base + `\n\n选题：${selectedTopic}\n写完整口播文案，全程口语，植入本地信息，数据用「xx」占位，真实人物用「x老板」占位，按格式输出：\n【开头钩子】\n内容\n\n【正文】\n内容\n\n【结尾CTA】\n内容\n\n📌占位符提示：说明需要用户替换的内容`;
-  if (step === "storyboard") return `你是短视频分镜头脚本专家。将以下文案拆分为5-8个分镜头。\n\n文案：\n${script}\n\n严格只返回JSON数组，不加任何说明文字：\n[{"shot":"镜次1","scene":"画面描述","voiceover":"口播内容","duration":"xx秒"}]\n\n然后另起一行输出：TIPS:提示1|提示2|提示3`;
+  const systemRole = `你是一位专注农资门店短视频创作的文案专家，深度理解农户心理和农事节点，擅长写出真实接地气、有传播力的口播文案。`;
+
+  const params = `【参数表】
+账号类型：${form.accountType}
+触发源类型：${form.triggerType}
+目标人群：${form.audience}
+经营目的：${form.purpose}
+具体内容：${form.content}
+本地信息：${form.localInfo}
+语感提炼：${form.voice || "无，使用朴实直接的农村口语风格"}`;
+
+  const dims_str = `【推导维度】
+表达方式：${dims.expression[0]}（备选：${dims.expression[1]}）
+时长节奏：${dims.duration}
+CTA方向：${dims.ctaDirection}
+CTA强度：${dims.ctaStrength}
+情绪底色：${dims.mood}
+举例方式：${dims.example}
+信息密度：${dims.density}
+本地化信号强度：${dims.localStrength}
+开头钩子：AI自动匹配最优钩子`;
+
+  const rules = `【文案写作规则】
+1. 结构必须是「问题引入 → 方案呈现 → 信任背书 → CTA」，让农户先感同身受再给答案
+2. 开头3秒必须制造悬念、痛点或冲突，让农户停止划走
+3. 视频只讲「问题+方案」，不在视频里直接推销具体产品，产品线下承接
+4. 钩子设计要自然不露痕迹，不能有明显的营销感和AI味
+5. 举例方式为「${dims.example}」：
+   - 真实人物：统一用「x老板/x大哥」占位，提供叙述框架，具体事件用【此处填写真实案例】占位
+   - 数据对比：具体数字统一用「xx」占位，提示用户根据实情填写
+   - 假设情境：用「你有没有遇到过这种情况」引导共鸣
+6. 情绪底色为「${dims.mood}」，全程文案的措辞和节奏要符合这个情绪基调
+7. CTA强度为「${dims.ctaStrength}」：
+   - 直接表达：明确说出动作指令
+   - 软化表达：用利他行为包裹动作，平台敏感词替换如下：
+     私信我 → 评论区留下你的情况，我们来联系你
+     免费 → 不收费 / 我们来承担
+     加我微信 → 留下你的联系方式
+     转发 → 帮这件事传出去
+8. 本地化信号强度为「${dims.localStrength}」，必须植入本地信息：${form.localInfo}
+   - 强/最强：地名、作物名、本地农户称谓全部植入，越具体越好
+   - 中等：自然带入地名和主要作物即可
+9. 信息密度为「${dims.density}」：
+   - 低密度：一个核心观点打透，不展开多条信息
+   - 中密度：有过程有细节，但不堆砌
+10. ${form.voice ? `语感风格：仔细分析以下样本的句式习惯、语气词、表达方式，生成文案时模仿这种风格：\n${form.voice}` : "语感风格：朴实直接的农村口语，像店长对着老乡说话，不用书面语和专业术语"}
+11. 账号类型为「${form.accountType}」：
+    - 门店官方账号：用「我们店/我们团队」口吻，有权威感
+    - 店长个人账号：用第一人称个人经历，亲切真实
+    - 职人账号：专业建议直接给到农户，技术感强`;
+
+  const base = `${systemRole}\n\n${params}\n\n${dims_str}\n\n${rules}`;
+
+  if (step === "topics") return base + `\n\n【任务】生成2个视频选题方案。
+方案一使用表达方式：${dims.expression[0]}
+方案二使用表达方式：${dims.expression[1]}
+
+选题标题要：本地化、有冲突感、让目标农户看到标题就想点进来。
+
+严格只返回JSON数组，不加任何说明文字：
+[{"title":"标题一","style":"${dims.expression[0]}","angle":"核心角度一句话"},{"title":"标题二","style":"${dims.expression[1]}","angle":"核心角度一句话"}]`;
+
+  if (step === "script") return base + `\n\n【任务】根据以上所有规则，生成选题《${selectedTopic}》的完整口播文案。
+
+按以下格式严格输出：
+
+【开头钩子】
+（钩子内容，3秒内抓住注意力）
+
+【正文】
+（正文内容，按表达方式「${dims.expression[0]}」展开，信息密度「${dims.density}」）
+
+【结尾CTA】
+（CTA内容，强度「${dims.ctaStrength}」，方向「${dims.ctaDirection}」）
+
+📌 占位符提示：
+（列出文案中所有需要用户替换的占位符，说明替换方向）`;
+
+  if (step === "storyboard") return `你是短视频分镜头脚本专家。
+
+将以下文案拆分为5-8个分镜头脚本，每个镜次要有明确的画面感和拍摄指引。
+
+文案：
+${script}
+
+严格只返回JSON数组，不加任何说明文字：
+[{"shot":"镜次1","scene":"画面描述（拍什么、怎么拍）","voiceover":"口播内容","duration":"xx秒"}]
+
+然后另起一行输出：TIPS:拍摄提示1|拍摄提示2|拍摄提示3`;
 }
 
 function parseStoryboard(raw) {
