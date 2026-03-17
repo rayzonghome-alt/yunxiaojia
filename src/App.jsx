@@ -245,6 +245,49 @@ function DimTag({ label, value, isAdvanced }) {
   );
 }
 
+const DIM_OPTIONS = {
+  expression: ["农技干货讲解","田间实拍教学","客户案例记录","情绪共鸣表达","产品方案演示","数据对比展示","提醒口播","门店实力展示","段子演绎"],
+  duration: ["60秒以内","90秒故事型","3分钟讲透型"],
+  ctaDirection: ["评论互动 / 点赞 / 收藏 / 转发","私信咨询 / 收藏备用","到店 / 下单 / 私信咨询","进群 / 加微信 / 关注账号"],
+  ctaStrength: ["软化表达","直接表达"],
+  mood: ["焦虑预警","专业陪伴","价值感知","信任背书","情绪陪伴","情绪共鸣","情绪共鸣+价值感知"],
+  example: ["假设情境","真实人物","数据对比"],
+  density: ["低密度（一个观点打透）","中密度（有过程有细节）","中高密度","低密度（越简单越好）"],
+  localStrength: ["中等","强","最强"],
+};
+
+function DimSelector({ label, value, options, onChange, isAdvanced }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ padding: "10px 0", borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: open ? 10 : 0 }}>
+        <span style={{ fontSize: 12, color: T.textLight, minWidth: 80 }}>{label}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 13, color: isAdvanced ? T.textMid : T.primaryDark, fontWeight: 600 }}>{value}</span>
+          <button onClick={() => setOpen(!open)} style={{
+            padding: "3px 10px", borderRadius: 6,
+            border: `1px solid ${T.border}`, background: open ? T.primaryLight : T.card,
+            color: open ? T.primary : T.textLight, fontSize: 11, cursor: "pointer",
+          }}>{open ? "收起" : "修改"}</button>
+        </div>
+      </div>
+      {open && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 7, paddingLeft: 80 }}>
+          {options.map(opt => (
+            <button key={opt} onClick={() => { onChange(opt); setOpen(false); }} style={{
+              padding: "6px 12px", borderRadius: 8, fontSize: 12, cursor: "pointer",
+              border: `1px solid ${value === opt ? T.primary : T.border}`,
+              background: value === opt ? T.primaryLight : T.card,
+              color: value === opt ? T.primaryDark : T.textMid,
+              fontWeight: value === opt ? 700 : 400,
+            }}>{opt}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Spinner({ msg }) {
   return (
     <div style={{ textAlign: "center", padding: "40px 0" }}>
@@ -431,40 +474,64 @@ export default function App() {
         )}
 
         {/* STEP 1 */}
-        {step === 1 && dims && (
-          <div>
-            {dims.isWarning && (
-              <div style={{ padding: "16px 20px", borderRadius: 12, marginBottom: 16, background: T.amberLight, border: `1px solid ${T.amberBorder}` }}>
-                <p style={{ color: T.amber, fontSize: 13, margin: "0 0 10px", lineHeight: 1.7, fontWeight: 600 }}>⚠️ 组合建议</p>
-                <p style={{ color: T.textMid, fontSize: 12, margin: "0 0 10px", lineHeight: 1.7 }}>「门店经营事件 + 流量获取」效果有限。门店内容天然是店家视角，陌生人缺乏观看动机。建议将经营目的改为：信任建立 / 成交转化 / 关系维护</p>
-                <button onClick={() => setStep(0)} style={{ ...btnSecondary, fontSize: 12, padding: "6px 14px" }}>← 返回修改</button>
-              </div>
-            )}
+        {step===1&&dims&&(
+  <div>
+    {dims.isWarning&&(
+      <div style={{padding:"16px 20px",borderRadius:12,marginBottom:16,background:T.amberLight,border:`1px solid ${T.amberBorder}`}}>
+        <p style={{color:T.amber,fontSize:13,margin:"0 0 10px",lineHeight:1.7,fontWeight:600}}>⚠️ 组合建议</p>
+        <p style={{color:T.textMid,fontSize:12,margin:"0 0 10px",lineHeight:1.7}}>「门店经营事件 + 流量获取」效果有限。门店内容天然是店家视角，陌生人缺乏观看动机。建议将经营目的改为：信任建立 / 成交转化 / 关系维护</p>
+        <button onClick={()=>setStep(0)} style={{...btnSecondary,fontSize:12,padding:"6px 14px"}}>← 返回修改</button>
+      </div>
+    )}
 
-            <SectionCard title="基础层" icon="📐" hint="可返回参数表调整后重新推导">
-              <DimTag label="表达方式" value={`① ${dims.expression[0]}　备选：${dims.expression[1]}`} />
-              <DimTag label="时长节奏" value={dims.duration} />
-            </SectionCard>
+    <SectionCard title="基础层" icon="📐" hint="可直接修改，点击任意维度右侧「修改」按钮">
+      <DimSelector label="表达方式" value={dims.expression[0]}
+        options={DIM_OPTIONS.expression}
+        onChange={v => setDims(d => ({...d, expression:[v, d.expression[1]]}))}
+        isAdvanced={false}/>
+      <DimSelector label="时长节奏" value={dims.duration}
+        options={DIM_OPTIONS.duration}
+        onChange={v => setDims(d => ({...d, duration:v}))}
+        isAdvanced={false}/>
+    </SectionCard>
 
-            <SectionCard title="进阶层" icon="⚙️" hint="AI已匹配最优参数，小白用户不建议修改">
-              <DimTag label="CTA方向" value={dims.ctaDirection} isAdvanced />
-              <DimTag label="CTA强度" value={dims.ctaStrength} isAdvanced />
-              <DimTag label="情绪底色" value={dims.mood} isAdvanced />
-              <DimTag label="举例方式" value={dims.example} isAdvanced />
-              <DimTag label="信息密度" value={dims.density} isAdvanced />
-              <DimTag label="本地化强度" value={dims.localStrength} isAdvanced />
-              <DimTag label="开头钩子" value="AI自动匹配最优钩子" isAdvanced />
-            </SectionCard>
+    <SectionCard title="进阶层" icon="⚙️" hint="AI已匹配最优参数，小白用户不建议修改">
+      <DimSelector label="CTA方向" value={dims.ctaDirection}
+        options={DIM_OPTIONS.ctaDirection}
+        onChange={v => setDims(d => ({...d, ctaDirection:v}))}
+        isAdvanced/>
+      <DimSelector label="CTA强度" value={dims.ctaStrength}
+        options={DIM_OPTIONS.ctaStrength}
+        onChange={v => setDims(d => ({...d, ctaStrength:v}))}
+        isAdvanced/>
+      <DimSelector label="情绪底色" value={dims.mood}
+        options={DIM_OPTIONS.mood}
+        onChange={v => setDims(d => ({...d, mood:v}))}
+        isAdvanced/>
+      <DimSelector label="举例方式" value={dims.example}
+        options={DIM_OPTIONS.example}
+        onChange={v => setDims(d => ({...d, example:v}))}
+        isAdvanced/>
+      <DimSelector label="信息密度" value={dims.density}
+        options={DIM_OPTIONS.density}
+        onChange={v => setDims(d => ({...d, density:v}))}
+        isAdvanced/>
+      <DimSelector label="本地化强度" value={dims.localStrength}
+        options={DIM_OPTIONS.localStrength}
+        onChange={v => setDims(d => ({...d, localStrength:v}))}
+        isAdvanced/>
+      <DimTag label="开头钩子" value="AI自动匹配最优钩子" isAdvanced/>
+    </SectionCard>
 
-            {err && <p style={{ color: T.red, fontSize: 12, textAlign: "center", marginBottom: 12 }}>{err}</p>}
-            {loading ? <Spinner msg={msg} /> : (
-              <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => setStep(0)} style={{ ...btnSecondary, flex: 1 }}>← 返回</button>
-                <button onClick={go2} style={{ ...btnPrimary, flex: 2 }}>确认维度，生成选题 →</button>
-              </div>
-            )}
-          </div>
-        )}
+    {err&&<p style={{color:T.red,fontSize:12,textAlign:"center",marginBottom:12}}>{err}</p>}
+    {loading?<Spinner msg={msg}/>:(
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={()=>setStep(0)} style={{...btnSecondary,flex:1}}>← 返回</button>
+        <button onClick={go2} style={{...btnPrimary,flex:2}}>确认维度，生成选题 →</button>
+      </div>
+    )}
+  </div>
+)}
 
         {/* STEP 2 */}
         {step === 2 && topics.length > 0 && (
